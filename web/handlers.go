@@ -207,7 +207,8 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	subpath, _ := utils.GetSubpathFromConfig(c.App.Config())
 	siteURLHeader := app.GetProtocol(r) + "://" + r.Host + subpath
-	if c.App.Channels().License() != nil && *c.App.Channels().License().Features.Cloud {
+	if *c.App.Config().ServiceSettings.UseSiteURLInsteadHost ||
+		(c.App.Channels().License() != nil && *c.App.Channels().License().Features.Cloud) {
 		siteURLHeader = *c.App.Config().ServiceSettings.SiteURL + subpath
 	}
 	c.SetSiteURLHeader(siteURLHeader)

@@ -824,3 +824,80 @@ func TestCheckCSRFToken(t *testing.T) {
 		assert.Nil(t, c.Err)
 	})
 }
+
+func TestHandlerSetSiteURLHeader(t *testing.T) {
+	t.Run("default settings, using request Host header", func(t *testing.T) {
+		th := SetupWithStoreMock(t)
+		defer th.TearDown()
+
+		expectedHostValue := "example1.com"
+
+		h := &Handler{
+			RequireSession: true,
+			TrustRequester: false,
+			Srv:            th.Server,
+			HandleFunc: func(c *Context, w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, c.GetSiteURLHeader(), expectedHostValue)
+			},
+		}
+		h.Srv.Config().ServiceSettings.SiteURL = model.NewString("https://some.url")
+
+		r := httptest.NewRequest(http.MethodGet, "/some", nil)
+		r.Host = expectedHostValue
+
+		w := httptest.NewRecorder()
+
+		h.ServeHTTP(w, r)
+	})
+
+	t.Run("UseSiteURLInsteadHost is set, using ServiceSettings.SiteURL", func(t *testing.T) {
+		th := SetupWithStoreMock(t)
+		defer th.TearDown()
+
+		expectedHostValue := "example1.com"
+
+		h := &Handler{
+			RequireSession: true,
+			TrustRequester: false,
+			Srv:            th.Server,
+			HandleFunc: func(c *Context, w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, c.GetSiteURLHeader(), expectedHostValue)
+			},
+		}
+
+		h.Srv.Config().ServiceSettings.SiteURL = model.NewString("https://" + expectedHostValue)
+		h.Srv.Config().ServiceSettings.UseSiteURLInsteadHost = model.NewBool(true)
+
+		r := httptest.NewRequest(http.MethodGet, "/some", nil)
+
+		w := httptest.NewRecorder()
+
+		h.ServeHTTP(w, r)
+	})
+
+	t.Run("default settings, using Features.Cloud", func(t *testing.T) {
+		th := Setup(t).InitBasic()
+		defer th.TearDown()
+
+		th.App.Srv().SetLicense(model.NewTestLicense("cloud"))
+
+		expectedHostValue := "example1.com"
+
+		h := &Handler{
+			RequireSession: true,
+			TrustRequester: false,
+			Srv:            th.Server,
+			HandleFunc: func(c *Context, w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, c.GetSiteURLHeader(), expectedHostValue)
+			},
+		}
+
+		h.Srv.Config().ServiceSettings.SiteURL = model.NewString("https://" + expectedHostValue)
+
+		r := httptest.NewRequest(http.MethodGet, "/some", nil)
+
+		w := httptest.NewRecorder()
+
+		h.ServeHTTP(w, r)
+	})
+}

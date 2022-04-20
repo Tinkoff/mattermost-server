@@ -275,15 +275,16 @@ var ServerTLSSupportedCiphers = map[string]uint16{
 }
 
 type ServiceSettings struct {
-	SiteURL             *string `access:"environment_web_server,authentication_saml,write_restrictable"`
-	WebsocketURL        *string `access:"write_restrictable,cloud_restrictable"`
-	LicenseFileLocation *string `access:"write_restrictable,cloud_restrictable"`                        // telemetry: none
-	ListenAddress       *string `access:"environment_web_server,write_restrictable,cloud_restrictable"` // telemetry: none
-	ConnectionSecurity  *string `access:"environment_web_server,write_restrictable,cloud_restrictable"`
-	TLSCertFile         *string `access:"environment_web_server,write_restrictable,cloud_restrictable"`
-	TLSKeyFile          *string `access:"environment_web_server,write_restrictable,cloud_restrictable"`
-	TLSMinVer           *string `access:"write_restrictable,cloud_restrictable"` // telemetry: none
-	TLSStrictTransport  *bool   `access:"write_restrictable,cloud_restrictable"`
+	SiteURL               *string `access:"environment_web_server,authentication_saml,write_restrictable"`
+	UseSiteURLInsteadHost *bool   `access:"environment_web_server,authentication_saml,write_restrictable"`
+	WebsocketURL          *string `access:"write_restrictable,cloud_restrictable"`
+	LicenseFileLocation   *string `access:"write_restrictable,cloud_restrictable"`                        // telemetry: none
+	ListenAddress         *string `access:"environment_web_server,write_restrictable,cloud_restrictable"` // telemetry: none
+	ConnectionSecurity    *string `access:"environment_web_server,write_restrictable,cloud_restrictable"`
+	TLSCertFile           *string `access:"environment_web_server,write_restrictable,cloud_restrictable"`
+	TLSKeyFile            *string `access:"environment_web_server,write_restrictable,cloud_restrictable"`
+	TLSMinVer             *string `access:"write_restrictable,cloud_restrictable"` // telemetry: none
+	TLSStrictTransport    *bool   `access:"write_restrictable,cloud_restrictable"`
 	// In seconds.
 	TLSStrictTransportMaxAge                          *int64   `access:"write_restrictable,cloud_restrictable"` // telemetry: none
 	TLSOverwriteCiphers                               []string `access:"write_restrictable,cloud_restrictable"` // telemetry: none
@@ -390,6 +391,10 @@ func (s *ServiceSettings) SetDefaults(isUpdate bool) {
 		} else {
 			s.SiteURL = NewString("")
 		}
+	}
+
+	if s.UseSiteURLInsteadHost == nil {
+		s.UseSiteURLInsteadHost = NewBool(false)
 	}
 
 	if s.WebsocketURL == nil {
