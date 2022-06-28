@@ -25,18 +25,19 @@ type FeatureFlags struct {
 	// AppsEnabled toggles the Apps framework functionalities both in server and client side
 	AppsEnabled bool
 
-	// AppBarEnabled toggles the App Bar component on client side
-	AppBarEnabled bool
-
 	// Feature flags to control plugin versions
 	PluginPlaybooks  string `plugin_id:"playbooks"`
 	PluginApps       string `plugin_id:"com.mattermost.apps"`
 	PluginFocalboard string `plugin_id:"focalboard"`
+	PluginCalls      string `plugin_id:"com.mattermost.calls"`
 
 	PermalinkPreviews bool
 
 	// Enable Calls plugin support in the mobile app
 	CallsMobile bool
+
+	// CallsEnabled controls whether or not the Calls plugin should be enabled
+	CallsEnabled bool
 
 	// A dash separated list for feature flags to turn on for Boards
 	BoardsFeatureFlags string
@@ -65,6 +66,8 @@ type FeatureFlags struct {
 	InsightsEnabled bool
 
 	CommandPalette bool
+
+	AdvancedTextEditor bool
 }
 
 func (f *FeatureFlags) SetDefaults() {
@@ -73,7 +76,6 @@ func (f *FeatureFlags) SetDefaults() {
 	f.CollapsedThreads = true
 	f.EnableRemoteClusterService = false
 	f.AppsEnabled = true
-	f.AppBarEnabled = false
 	f.PluginApps = ""
 	f.PluginFocalboard = ""
 	f.PermalinkPreviews = true
@@ -89,7 +91,10 @@ func (f *FeatureFlags) SetDefaults() {
 	f.GraphQL = false
 	f.InsightsEnabled = false
 	f.CommandPalette = false
+	f.AdvancedTextEditor = true
+	f.CallsEnabled = true
 }
+
 func (f *FeatureFlags) Plugins() map[string]string {
 	rFFVal := reflect.ValueOf(f).Elem()
 	rFFType := reflect.TypeOf(f).Elem()

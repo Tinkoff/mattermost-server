@@ -635,6 +635,24 @@ func (a *App) importUser(data *UserImportData, dryRun bool) *model.AppError {
 		})
 	}
 
+	if data.CollapseConsecutive != nil {
+		preferences = append(preferences, model.Preference{
+			UserId:   savedUser.Id,
+			Category: model.PreferenceCategoryDisplaySettings,
+			Name:     model.PreferenceNameCollapseConsecutive,
+			Value:    *data.CollapseConsecutive,
+		})
+	}
+
+	if data.ColorizeUsernames != nil {
+		preferences = append(preferences, model.Preference{
+			UserId:   savedUser.Id,
+			Category: model.PreferenceCategoryDisplaySettings,
+			Name:     model.PreferenceNameColorizeUsernames,
+			Value:    *data.ColorizeUsernames,
+		})
+	}
+
 	if data.ChannelDisplayMode != nil {
 		preferences = append(preferences, model.Preference{
 			UserId:   savedUser.Id,
@@ -737,7 +755,7 @@ func (a *App) importUserTeams(user *model.User, data *[]UserTeamImportData) *mod
 	isGuestByTeamId := map[string]bool{}
 	isUserByTeamId := map[string]bool{}
 	isAdminByTeamId := map[string]bool{}
-	existingMemberships, nErr := a.Srv().Store.Team().GetTeamsForUser(context.Background(), user.Id)
+	existingMemberships, nErr := a.Srv().Store.Team().GetTeamsForUser(context.Background(), user.Id, "", true)
 	if nErr != nil {
 		return model.NewAppError("importUserTeams", "app.team.get_members.app_error", nil, nErr.Error(), http.StatusInternalServerError)
 	}
@@ -1118,6 +1136,10 @@ func (a *App) importReplies(c *request.Context, data []ReplyImportData, post *mo
 		reply.RootId = post.Id
 		reply.Message = *replyData.Message
 		reply.CreateAt = *replyData.CreateAt
+		if reply.CreateAt < post.CreateAt {
+			mlog.Warn("Reply CreateAt is before parent post CreateAt, setting it to parent post CreateAt", mlog.Int64("reply_create_at", reply.CreateAt), mlog.Int64("parent_create_at", post.CreateAt))
+			reply.CreateAt = post.CreateAt
+		}
 		if replyData.Type != nil {
 			reply.Type = *replyData.Type
 		}
@@ -1233,7 +1255,7 @@ func (a *App) importAttachment(c *request.Context, data *AttachmentImportData, p
 		return nil, appErr
 	}
 
-	if fileInfo.IsImage() {
+	if fileInfo.IsImage() && !fileInfo.IsSvg() {
 		a.HandleImages([]string{fileInfo.PreviewPath}, []string{fileInfo.ThumbnailPath}, [][]byte{fileData})
 	}
 
@@ -1863,7 +1885,8 @@ func (a *App) importEmoji(data *EmojiImportData, dryRun bool) *model.AppError {
 	}
 	defer file.Close()
 
-	if _, err := a.WriteFile(file, getEmojiImagePath(emoji.Id)); err != nil {
+	reader := utils.NewLimitedReaderWithError(file, MaxEmojiFileSize)
+	if _, err := a.WriteFile(reader, getEmojiImagePath(emoji.Id)); err != nil {
 		return err
 	}
 
